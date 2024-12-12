@@ -1,0 +1,297 @@
+openapi: 3.1.1
+info:
+  title: Letterboxd Clone API
+  description: API for a simplified Letterboxd-like application.
+  version: 1.0.0
+servers:
+  - url: https://api.maximedavin.com
+    description: Production server
+  - url: http://localhost:3000
+    description: Development server
+components:
+  schemas:
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          example: review_456
+        user:
+          type: string
+          example: johndoe
+        rating:
+          type: integer
+          example: 5
+        review:
+          type: string
+          example: Amazing movie!
+    Movie:
+      type: object
+      properties:
+        id:
+          type: string
+          example: 123
+        title:
+          type: string
+          example: Inception
+        year:
+          type: integer
+          example: 2010
+        genre:
+          type: string
+          example: Sci-Fi
+        description:
+          type: string
+          example: A skilled thief leads a team into dream worlds.
+    MovieDetail:
+      allOf:
+        - $ref: '#/components/schemas/Movie'
+        - type: object
+          properties:
+            recent_reviews:
+              type: array
+              description: The last 5 reviews for the movie
+              items:
+                $ref: '#/components/schemas/Review'
+
+          
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: johndoe
+                password:
+                  type: string
+                  example: password123
+                email:
+                  type: string
+                  example: johndoe@example.com
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid input
+
+  /auth/unregister:
+    delete:
+      summary: Unregister a user account
+      responses:
+        '204':
+          description: User unregistered successfully
+
+  /auth/login:
+    post:
+      summary: Authenticate a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: johndoe@example.com
+                password:
+                  type: string
+                  example: password123
+      responses:
+        '200':
+          description: Login successful, returns a token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1...
+        '401':
+          description: Invalid credentials
+
+  /movies:
+    get:
+      summary: List all movies
+      parameters:
+        - in: query
+          name: genre
+          schema:
+            type: string
+          description: Filter movies by genre
+        - in: query
+          name: year
+          schema:
+            type: integer
+          description: Filter movies by release year
+      responses:
+        '200':
+          description: A list of movies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movie'
+
+  /movies/{movie_id}:
+    get:
+      summary: Get details about a specific movie
+      parameters:
+        - in: path
+          name: movie_id
+          required: true
+          schema:
+            type: string
+          description: ID of the movie
+      responses:
+        '200':
+          description: Movie details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MovieDetail'
+        '404':
+          description: Movie not found
+
+  /movies/{movie_id}/reviews:
+    get:
+      summary: Fetch all reviews for a specific movie
+      parameters:
+        - in: path
+          name: movie_id
+          required: true
+          schema:
+            type: string
+          description: ID of the movie
+      responses:
+        '200':
+          description: List of reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Review'
+    post:
+      summary: Add a review for a movie
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  example: 5
+                review:
+                  type: string
+                  example: Amazing cinematography!
+      responses:
+        '201':
+          description: Review added successfully
+        '400':
+          description: Invalid input
+
+  /reviews/{review_id}:
+    patch:
+      summary: Edit a user review
+      parameters:
+        - in: path
+          name: review_id
+          required: true
+          schema:
+            type: string
+          description: ID of the review
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  example: 4
+                review:
+                  type: string
+                  example: Updated review text!
+      responses:
+        '200':
+          description: Review updated successfully
+        '400':
+          description: Invalid input
+        '403':
+          description: Forbidden, user does not own the review
+        '404':
+          description: Review not found
+
+    delete:
+      summary: Delete a user review
+      parameters:
+        - in: path
+          name: review_id
+          required: true
+          schema:
+            type: string
+          description: ID of the review
+      responses:
+        '204':
+          description: Review deleted successfully
+        '403':
+          description: Forbidden, user does not own the review
+        '404':
+          description: Review not found          
+
+  /users/{user_id}/lists:
+    get:
+      summary: Get all lists created by a user
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+          description: ID of the user
+      responses:
+        '200':
+          description: A list of user-created lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      example: list_789
+                    name:
+                      type: string
+                      example: Favorite Movies
+                    description:
+                      type: string
+                      example: A collection of my all-time favorite movies
+                    movies:
+                      type: array
+                      items:
+                        type: string
+                        example: movie_123
+
+  /reset:
+    post:
+      summary: Reset the database to its initial state, delete users and reviews, but keep movies
+      responses:
+        '200':
+          description: Successfully reset
+        '500':
+          description: Failed to reset
