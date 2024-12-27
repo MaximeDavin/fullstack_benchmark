@@ -1,0 +1,48 @@
+name: Authentication stage
+description:
+  Reusable test stage for authentication
+
+variables:
+  user:
+    user: testuser
+    pass: testpassword
+
+stages:
+  - id: register
+    name: Register a user
+    request:
+      url: http://localhost:8000/register/
+      method: POST
+      json:
+        user: "{user.user:s}"
+        password: "{user.pass:s}"
+    response:
+      status_code: 201
+  - name: Login a user
+    request:
+      url: "http://localhost:8000/login/"
+      method: POST
+      json:
+        user: "{user.user:s}"
+        password: "{user.pass:s}"
+    response:
+      status_code: 200
+      verify_response_with:
+        function: tavern.helpers:validate_jwt
+        extra_kwargs:
+          jwt_key: "access"
+          options:
+            verify_signature: false
+      save:
+        $ext:
+          function: tavern.helpers:validate_jwt
+          extra_kwargs:
+            jwt_key: "access"
+            options:
+              verify_signature: false
+
+# finally:
+#   - name: Reset database
+#     request:
+#       url: "http://localhost:8000/reset/"
+#       method: POST

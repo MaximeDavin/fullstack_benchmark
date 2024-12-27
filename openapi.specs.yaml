@@ -6,7 +6,7 @@ info:
 servers:
   - url: https://api.maximedavin.com
     description: Production server
-  - url: http://localhost:3000
+  - url: http://localhost:8000
     description: Development server
 components:
   schemas:
@@ -25,6 +25,10 @@ components:
         review:
           type: string
           example: Amazing movie!
+        created_at:
+          type: string
+          format: date-time
+          example: "2024-12-13T17:32:28Z"
     Movie:
       type: object
       properties:
@@ -37,12 +41,13 @@ components:
         year:
           type: integer
           example: 2010
-        genre:
-          type: string
-          example: Sci-Fi
         description:
           type: string
           example: A skilled thief leads a team into dream worlds.
+        released_at:
+          type: string
+          format: date
+          example: "2024-12-13"
     MovieDetail:
       allOf:
         - $ref: '#/components/schemas/Movie'
@@ -80,13 +85,6 @@ paths:
           description: User registered successfully
         '400':
           description: Invalid input
-
-  /auth/unregister:
-    delete:
-      summary: Unregister a user account
-      responses:
-        '204':
-          description: User unregistered successfully
 
   /auth/login:
     post:
@@ -132,6 +130,18 @@ paths:
           schema:
             type: integer
           description: Filter movies by release year
+        - name: sort
+          in: query
+          description: Optional sorting criteria
+          required: false
+          schema:
+            type: string
+            enum:
+              - name
+              - -name
+              - released_at
+              - -released_at
+            default: released_at
       responses:
         '200':
           description: A list of movies
@@ -162,16 +172,40 @@ paths:
         '404':
           description: Movie not found
 
-  /movies/{movie_id}/reviews:
+  /reviews:
     get:
-      summary: Fetch all reviews for a specific movie
+      summary: Fetch reviews, with an optional filter for a specific movie or a specific user
       parameters:
-        - in: path
-          name: movie_id
-          required: true
+        - name: movie_id
+          in: query
+          description: Optional filter for a specific movie
+          required: false
           schema:
             type: string
-          description: ID of the movie
+        - name: username
+          in: query
+          description: Optional filter for a specific user
+          required: false
+          schema:
+            type: string            
+        - name: limit
+          in: query
+          description: The number of items to return (default is 10)
+          required: false
+          schema:
+            type: integer
+            format: int
+            default: 10
+        - name: sort
+          in: query
+          description: Optional sorting criteria
+          required: false
+          schema:
+            type: string
+            enum:
+              - rating
+              - created_at
+            default: created_at
       responses:
         '200':
           description: List of reviews
@@ -199,6 +233,10 @@ paths:
       responses:
         '201':
           description: Review added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
         '400':
           description: Invalid input
 
@@ -228,6 +266,10 @@ paths:
       responses:
         '200':
           description: Review updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
         '400':
           description: Invalid input
         '403':
@@ -250,42 +292,7 @@ paths:
         '403':
           description: Forbidden, user does not own the review
         '404':
-          description: Review not found          
-
-  /users/{user_id}/lists:
-    get:
-      summary: Get all lists created by a user
-      parameters:
-        - in: path
-          name: user_id
-          required: true
-          schema:
-            type: string
-          description: ID of the user
-      responses:
-        '200':
-          description: A list of user-created lists
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                      example: list_789
-                    name:
-                      type: string
-                      example: Favorite Movies
-                    description:
-                      type: string
-                      example: A collection of my all-time favorite movies
-                    movies:
-                      type: array
-                      items:
-                        type: string
-                        example: movie_123
+          description: Review not found
 
   /reset:
     post:

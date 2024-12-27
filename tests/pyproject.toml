@@ -1,0 +1,9 @@
+[project]
+name = "tests"
+version = "0.1.0"
+description = "Test suite for backend API"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "tavern[pytest]>=2.11.0",
+]
